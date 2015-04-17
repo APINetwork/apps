@@ -1,7 +1,22 @@
 var _ = require('lodash');
+var util = require('util');
 var validIdReg = new RegExp("^[0-9a-fA-F]{24}$");
 
+function HttpError(httpStatus, message) {
+  Error.captureStackTrace(this, this.constructor);
+  this.name = 'HttpError';
+  this.message = message;
+  this.httpStatus = httpStatus;
+}
+util.inherits(HttpError, Error);
+HttpError.prototype.getHttpStatus = function () {
+  return this.httpStatus;
+};
+
 var validator = {
+
+  HttpError: HttpError,
+
   missing: function (obj, required) {
     var missing;
 
@@ -23,6 +38,22 @@ var validator = {
     return validIdReg.test(id);
   },
 
+  fail: function (res, error) {
+    switch (error.httpStatus) {
+      case 400:
+        this.failBadRequest(res, error);
+        break;
+      case 401:
+        this.failUnauthorized(res, error);
+        break;
+      case 404:
+        this.failNotFound(res, error);
+        break;
+      default:
+        this.failServer(res, error);
+    }
+  },
+
   failOnMissing: function (res, obj, required) {
     var missing = this.missing(obj, required);
 
@@ -35,25 +66,26 @@ var validator = {
   },
 
   failServer: function (res, error) {
-    var errorMsg = (error && error.toString()) || 'Internal Server Error';
+    var errorMsg = 'Internal Server Error';
     console.error(error.stack, '\n    [500 error stack trace]');
     res.status(500).json({ error: errorMsg });
   },
 
-  failParam: function (res, error) {
-    var errorMsg = (error && error.toString()) || 'Bad Request';
+  failBadRequest: function (res, error) {
+    var errorMsg = error instanceof Error ? error.message : error || 'Bad Request';
     console.warn(error.stack, '\n    [400 error stack trace]');
     res.status(400).json({ error: errorMsg });
   },
 
   failUnauthorized: function (res, error) {
-    var errorMsg = (error && error.toString()) || 'Not authorized';
+    var errorMsg = error instanceof Error ? error.message : error || 'Not Authorized';
     console.warn(401, error);
     res.status(401).json({ error: errorMsg });
   },
 
   failNotFound: function (res, error) {
-    var errorMsg = (error && error.toString()) || 'Not Found';
+    debugger;
+    var errorMsg = error instanceof Error ? error.message : error || 'Not Found';
     console.warn(404, error);
     res.status(404).json({ error: errorMsg });
   }

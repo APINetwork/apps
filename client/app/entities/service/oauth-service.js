@@ -14,7 +14,7 @@ define(function (require) {
 
     parse: function () {
       var attrs = OauthService.__super__.parse.apply(this, arguments);
-      if (attrs.connectionData) {
+      if (attrs && attrs.connectionData) {
         attrs.clientId = attrs.connectionData.clientId;
         attrs.clientSecret = attrs.connectionData.clientSecret;
       }

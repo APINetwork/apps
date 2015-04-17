@@ -48,9 +48,7 @@ function saveServiceToken(req, tokenSet, done) {
 
 module.exports = {
 
-  // TODO: Add Gmail
-  // TODO: Account for IMAP (ask Curtis if need be?)
-  strategies: function (passport) {
+  register: function (passport) {
 
     var multipass = new multiPassport.Strategy(passport);
 

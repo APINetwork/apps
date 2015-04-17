@@ -77,7 +77,7 @@ define(function (require, exports, module) {
     // Extract 'services' into sub-collection
     parse: function (data, options) {
       options = _.extend(options, { parse: true });
-      this.services.set(data.services, options);
+      if (data && data.services) this.services.set(data.services, options);
       return _.omit(data, 'services');
     },
 

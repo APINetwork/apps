@@ -7,7 +7,7 @@ var legalController = require('../views/legal/index');
 var privacyController = require('../views/privacy/index');
 var termsController = require('../views/terms/index');
 
-var staticPagesRoutes = function (app, passport) {
+var staticPagesRoutes = function (app) {
 
   app.get('/', loginController.init);
   app.get('/about/', aboutController.init);
@@ -25,27 +25,27 @@ var staticPagesRoutes = function (app, passport) {
   // social sign up
   // app.post('/signup/social/', signupController.signupSocial);
   // app.get('/signup/twitter/',
-  //   passport.authenticate('twitter', {
+  //   app.passport.authenticate('twitter', {
   //     callbackURL: '/signup/twitter/callback/'
   //   }));
   // app.get('/signup/twitter/callback/', signupController.signupTwitter);
   // app.get('/signup/github/',
-  //   passport.authenticate('github', {
+  //   app.passport.authenticate('github', {
   //     callbackURL: '/signup/github/callback/', scope: ['user:email']
   //   }));
   // app.get('/signup/github/callback/', signupController.signupGitHub);
   // app.get('/signup/facebook/',
-  //   passport.authenticate('facebook', {
+  //   app.passport.authenticate('facebook', {
   //     callbackURL: '/signup/facebook/callback/', scope: ['email']
   //   }));
   // app.get('/signup/facebook/callback/', signupController.signupFacebook);
   // app.get('/signup/google/',
-  //   passport.authenticate('google', {
+  //   app.passport.authenticate('google', {
   //     callbackURL: '/signup/google/callback/', scope: ['profile email']
   //   }));
   // app.get('/signup/google/callback/', signupController.signupGoogle);
   // app.get('/signup/tumblr/',
-  //   passport.authenticate('tumblr', {
+  //   app.passport.authenticate('tumblr', {
   //     callbackURL: '/signup/tumblr/callback/'
   //   }));
   // app.get('/signup/tumblr/callback/', signupController.signupTumblr);

@@ -5,7 +5,7 @@ var datamodule = new PDM.DataModule({
   services: ['facebook', 'twitter', 'gmail']
 });
 
-var pdmRoutes = function (app, passport) {
+var pdmRoutes = function (app) {
 
   app.get('/getUri', function(req, res) {
     datamodule.fetcher.fetch(

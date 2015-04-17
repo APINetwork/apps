@@ -2,7 +2,7 @@ var authUtil = require('../util/auth-util');
 var appController = require('../controllers/app-controller');
 var serviceController = require('../controllers/service-controller');
 
-var apiRoutes = function (app, passport) {
+var apiRoutes = function (app) {
 
   app.all('/api/apps/*', authUtil.ensureAuthenticated);
 

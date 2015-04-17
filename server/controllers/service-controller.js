@@ -82,17 +82,17 @@ var serviceController = {
     ]));
 
     req.app.db.models.Service
-      .update({
+      .findOneAndUpdate({
         _id: req.params.id,
         app: req.params.app,
         owner: req.user._id
       }, _service)
       .execQ()
-      .then(function (count) {
-        if (count === 0) {
+      .then(function (service) {
+        if (!service) {
           validator.failNotFound(res);
         } else {
-          res.json(_service);
+          res.status(204).send();
         }
       })
       .catch(validator.failServer.bind(null, res))

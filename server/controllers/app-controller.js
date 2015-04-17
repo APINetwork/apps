@@ -58,13 +58,13 @@ var appController = {
 
     // Catch null oauthCallback
     if (!_app.oauthCallback) {
-      validator.failParam(res, 'Must supply \'oauthCallback\'.');
+      validator.failBadRequest(res, 'Must supply \'oauthCallback\'.');
       return;
     }
     // Catch an incomplete oauthCallback
     urlObj = url.parse(_app.oauthCallback);
     if (!/^https?:/.test(urlObj.protocol)) {
-      validator.failParam(res, '\'oauthCallback\' must be a complete URL.');
+      validator.failBadRequest(res, '\'oauthCallback\' must be a complete URL.');
       return;
     }
 
@@ -89,30 +89,32 @@ var appController = {
       'name',
       'oauthCallback'
     ]));
-    var urlObj;
 
-    // Catch a nullified oauthCallback
-    if (!_.isUndefined(_app.oauthCallback) && !_app.oauthCallback) {
-      validator.failParam(res, '\'oauthCallback\' cannot be null.');
-      return;
-    }
-    // Catch an incomplete oauthCallback
-    urlObj = url.parse(_app.oauthCallback);
-    if (!/^https?:/.test(urlObj.protocol)) {
-      validator.failParam(res, '\'oauthCallback\' must be a complete URL.');
-      return;
+    // Only test oauthCallback if it exists in the request
+    if (!_.isUndefined(_app.oauthCallback)) {
+      // Catch a nullified oauthCallback
+      if (!_app.oauthCallback) {
+        validator.failBadRequest(res, '\'oauthCallback\' cannot be null.');
+        return;
+      }
+      // Catch an incomplete oauthCallback
+      else if (!/^https?:/.test(url.parse(_app.oauthCallback).protocol)) {
+        validator.failBadRequest(res, '\'oauthCallback\' must be a complete URL.');
+        return;
+      }
     }
 
     req.app.db.models.App
-      .updateQ({
+      .findOneAndUpdate({
         _id: req.params.id,
         owner: req.user._id
       }, _app)
-      .then(function (count) {
-        if (count === 0) {
+      .execQ()
+      .then(function (app) {
+        if (!app) {
           validator.failNotFound(res);
         } else {
-          res.json(_app);
+          res.status(204).send();
         }
       })
       .catch(validator.failServer.bind(null, res))

@@ -16,7 +16,10 @@ exports = module.exports = function(app, mongoose) {
 
   // API Network Apps and Services
   require('./schema/App')(app, mongoose);
-  require('./schema/AppToken')(app, mongoose);
   require('./schema/Service')(app, mongoose);
+
+  // API Network OAuth tokens
+  require('./schema/AppToken')(app, mongoose);
   require('./schema/ServiceToken')(app, mongoose);
+  require('./schema/AccessToken')(app, mongoose);
 };

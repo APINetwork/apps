@@ -16,7 +16,7 @@ exports.init = function(req, res){
   }
 };
 
-exports.signup = function(req, res){
+exports.signup = function(req, res, next){
   var workflow = req.app.utility.workflow(req, res);
 
   workflow.on('validate', function() {
@@ -175,7 +175,7 @@ exports.signup = function(req, res){
           workflow.emit('response');
         });
       }
-    })(req, res);
+    })(req, res, next);
   });
 
   workflow.emit('validate');

@@ -1,3 +1,4 @@
+/* jshint maxstatements: 50 */
 var authUtil = require('../util/auth-util');
 var usersController = require('../views/admin/users/index');
 var adminsController = require('../views/admin/administrators/index');
@@ -6,7 +7,7 @@ var accountsController = require('../views/admin/accounts/index');
 var statusesController = require('../views/admin/statuses/index');
 var categoriesController = require('../views/admin/categories/index');
 
-var adminRoutes = function (app, passport) {
+var adminRoutes = function (app) {
 
   app.all('/admin/*', authUtil.ensureAuthenticated, authUtil.ensureAdmin);
 

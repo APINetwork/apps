@@ -1,6 +1,5 @@
 'use strict';
 
-// TODO: Keep parent's child services in sync
 module.exports = function (app, mongoose) {
   var serviceSchema = new mongoose.Schema({
     app: { type: mongoose.Schema.Types.ObjectId, ref: 'App' },

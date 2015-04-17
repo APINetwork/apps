@@ -51,9 +51,7 @@ define(function (require, exports, module) {
         };
         var app = new App(attrs);
 
-        return app.save().then(function (attrs) {
-          attrs.name.should.equal(newName);
-        });
+        return app.save();
       });
 
       it('Get all apps should return X + 2 apps (unchanged).', function () {
@@ -155,8 +153,7 @@ define(function (require, exports, module) {
         });
       });
 
-      it('Update service1 type should succeed.', function () {
-        var originalSize = services.size();
+      it('Update service1 type should fail.', function () {
         var newType = 'gmail';
         var attrs = {
           _id: service1Id,
@@ -164,10 +161,8 @@ define(function (require, exports, module) {
         };
         var service = services.set(attrs, { remove: false });
 
-        return service.save().then(function () {
-          services.size().should.equal(originalSize);
-          services.get(service1Id).get('type').should.equal(newType);
-        });
+        service.save().should.equal(false);
+        service.validationError.should.equal("Can't change a service type; please remove and create a new one.");
       });
 
       it('Destroy service1 should succeed.', function () {

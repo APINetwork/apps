@@ -1,8 +1,20 @@
 var validator = require('../util/validator');
+var HttpError = validator.HttpError;
 var uuid = require('node-uuid');
 var Q = require('q');
 var url = require('url');
-var NOT_AUTHENTICATED = 'Not authenticated';
+var util = require('util');
+
+function NoServiceTokenError(service, message) {
+  Error.captureStackTrace(this, this.constructor);
+  this.name = 'HttpError';
+  this.message = message;
+  this.service = service;
+}
+util.inherits(NoServiceTokenError, Error);
+NoServiceTokenError.prototype.getService = function () {
+  return this.service;
+};
 
 function redirectToAppCallback(res, app, appToken) {
   var oauthCallback = app.oauthCallback;
@@ -43,10 +55,78 @@ var oauthController = {
       });
   },
 
+  accessToken: function (req, res) {
+    var clientId = req.params.clientId;
+    var clientSecret = req.query.clientSecret;
+    var token = req.query.appToken;
+
+    req.app.db.models.App
+      // Find App model from clientId
+      .findOne({
+        clientId: clientId,
+        clientSecret: clientSecret
+      })
+      .execQ()
+      // Find AppToken for App model
+      .then(function (app) {
+        if (!app) {
+          throw new HttpError(404, 'Invalid clientId or clientSecret');
+        }
+
+        var appToken = req.app.db.models.AppToken
+          .findOne({
+            app: app._id,
+            token: token
+          })
+          .execQ();
+
+        return [app, appToken];
+      })
+      .spread(function (app, appToken) {
+        if (!appToken) {
+          throw new HttpError(404, 'No or invalid appToken; must authenticate first.');
+        } else if (appToken.used) {
+          throw new HttpError(400, 'appToken has already been used.');
+        }
+
+        var accessToken = req.app.db.models.AccessToken
+          .createQ({
+            token: uuid.v4(),
+            app: app._id,
+            appToken: appToken.token
+          });
+        var updatingAppToken = req.app.db.models.AppToken
+          .findOneAndUpdate({
+            token: appToken.token
+          }, {
+            used: true
+          })
+          .execQ();
+
+        return [updatingAppToken, accessToken];
+      })
+      .spread(function (appToken, accessToken) {
+        if (!accessToken) {
+          validator.failServer(res, new Error('Problem creating accessToken.'));
+          return;
+        } else if (!appToken) {
+          validator.failServer(res, new Error('Problem updating appToken.'));
+          return;
+        }
+
+        res.json({ accessToken: accessToken.token });
+      })
+      .catch(function (error) {
+        validator.fail(res, error);
+      })
+      .done();
+  },
+
   auth: function (req, res) {
     var session = req.session;
-    if (!session.appTokens) session.appTokens = {};
     var clientId = req.params.clientId;
+
+    if (!session.appTokens) session.appTokens = {};
 
     req.app.db.models.App
       // Find App model from clientId
@@ -57,36 +137,15 @@ var oauthController = {
       // Find AppToken for App model
       .then(function (app) {
         if (!app) {
-          var error = new Error('Invalid clientId');
-          error.type = 404;
-          throw error;
+          throw new HttpError(404, 'Invalid clientId');
         }
 
-        // If user has an active API Network session with the client app, check for existing
-        // and valid appToken (true if user has authenticated at all within current session)
-        var appToken = session.appTokens[clientId];
-        if (appToken) {
-          appToken = req.app.db.models.AppToken
-            .findOne({
-              app: app._id,
-              token: appToken.token
-            })
-            .execQ();
-        }
+        var appToken = req.app.db.models.AppToken
+          .createQ({
+            token: uuid.v4(),
+            app: app._id
+          });
 
-        // appToken expected to be undefined here if appToken is not within session
-        return [app, appToken];
-      })
-      // Create AppToken if necessary
-      .spread(function (app, appToken) {
-        // No token; create one
-        if (!appToken) {
-          appToken = req.app.db.models.AppToken
-            .createQ({
-              token: uuid.v4(),
-              app: app._id
-            });
-        }
         return [app, appToken];
       })
       // Save AppToken to session
@@ -101,11 +160,7 @@ var oauthController = {
         res.redirect('/oauth/subauth');
       })
       .catch(function (error) {
-        if (error.type === 404) {
-          validator.failNotFound(res, error);
-        } else {
-          validator.failServer(res, error);
-        }
+        validator.fail(res, error);
       })
       .done();
   },
@@ -117,12 +172,9 @@ var oauthController = {
     var appToken = session.appTokens[clientId];
 
     if (!clientId) {
-      var error = new Error('Bad request. Call /oauth/auth first.');
-      error.type = 400;
-      throw error;
-    }
-    else if (!appToken) {
-      throw new Error('Problem retrieving appToken. Please contact support.');
+      throw new HttpError(400, 'Bad request. Call /oauth/auth first.');
+    } else if (!appToken) {
+      throw new HttpError(500, 'Problem retrieving appToken.');
     }
 
     req.app.db.models.App
@@ -149,11 +201,7 @@ var oauthController = {
         }
       })
       .catch(function (error) {
-        if (error.type === 400) {
-          validator.failParam(res, error);
-        } else {
-          validator.failServer(res, error);
-        }
+        validator.fail(res, error);
       })
       .done();
   },
@@ -177,10 +225,7 @@ var oauthController = {
         .then(function (serviceToken) {
           // If service token does not exist, trigger service authentication.
           if (!serviceToken) {
-            var error = new Error();
-            error.type = NOT_AUTHENTICATED;
-            error.service = service;
-            throw error;
+            throw new NoServiceTokenError(service);
           }
         });
     }, Q())
@@ -189,10 +234,9 @@ var oauthController = {
       redirectToAppCallback(res, app, appToken);
     })
     .catch(function (error) {
-      if (error.type === NOT_AUTHENTICATED) {
-        var service = error.service;
-        // Caught NOT_AUTHENTICATED; go ahead and authenticate
-        return oauthController._authService(req, res, next, appToken, service);
+      if (error instanceof NoServiceTokenError) {
+        // Caught no service token; trigger authentication for service.
+        return oauthController._authService(req, res, next, appToken, error.getService());
       } else {
         throw error;
       }
@@ -222,7 +266,7 @@ var oauthController = {
     var service = session.lastService;
 
     if (!appToken || !service) {
-      validator.failServer(res, 'Problem retrieving appToken or service. Please contact support.');
+      validator.failServer(res, new Error('Problem retrieving appToken or service.'));
       return;
     }
 
@@ -239,7 +283,7 @@ var oauthController = {
     var appToken = session.appTokens[session.lastClientId];
 
     if (!app || !appToken) {
-      validator.failServer(res, 'Problem retrieving app or appToken. Please contact support.');
+      validator.failServer(res, new Error('Problem retrieving app or appToken.'));
       return;
     }
 

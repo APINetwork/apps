@@ -1,14 +1,14 @@
 var httpController = require('../views/http/index');
 
-var routes = function (app, passport) {
-  require('./oauth-routes')(app, passport);
-  require('./static-pages-routes')(app, passport);
-  require('./login-logout-routes')(app, passport);
-  require('./admin-routes')(app, passport);
-  require('./account-routes')(app, passport);
-  require('./api-routes')(app, passport);
-  require('./user-routes')(app, passport);
-  require('./pdm-routes')(app, passport);
+var routes = function (app) {
+  require('./oauth-routes')(app);
+  require('./static-pages-routes')(app);
+  require('./login-logout-routes')(app);
+  require('./admin-routes')(app);
+  require('./account-routes')(app);
+  require('./api-routes')(app);
+  require('./user-routes')(app);
+  require('./pdm-routes')(app);
 
   // Used by Phusion Passenger to "wake up" node process on nginx server start
   app.get('/status', function (req, res) {

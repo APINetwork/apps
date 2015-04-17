@@ -59,7 +59,7 @@ define(function (require) {
     parse: function () {
       var attrs = Service.__super__.parse.apply(this, arguments);
 
-      if (attrs.createdAt) {
+      if (attrs && attrs.createdAt) {
         var dateTime = new Date(Date.parse(attrs.createdAt));
         var month = monthNames[dateTime.getMonth()];
         var day = dateTime.getDate();

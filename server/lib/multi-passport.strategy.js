@@ -22,8 +22,8 @@ function MultiStrategy(passport) {
     var expired = [];
 
     _.reduce(strategies, function (expired, stratKey) {
-      var remoteStrategy = self.passport._strategy(stratKey);
-      var expire = remoteStrategy.lastUsed && curTime - remoteStrategy.lastUsed > expiredInterval;
+      var strategy = self.passport._strategy(stratKey);
+      var expire = strategy.lastUsed && curTime - strategy.lastUsed > expiredInterval;
       if (expire) expired.push(stratKey);
       return expired;
     }, expired);
@@ -46,6 +46,7 @@ MultiStrategy.prototype.register = function (type, strategyClass, extendOptions,
   };
 };
 
+// TODO: Document
 MultiStrategy.prototype.authenticate = function (req, options) {
   options = options || {};
 
